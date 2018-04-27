@@ -1,6 +1,6 @@
 import logging
 from functools import wraps
-from flask import render_template, url_for, redirect, g, request
+from flask import render_template, redirect, g
 from main import app
 from model import Account
 from google.appengine.api import users
@@ -14,16 +14,15 @@ def login_required(f):
             account = Account.query(Account.userid == user.user_id()).fetch(1)
             if account:
                 g.user = account[0]
-                logging.info('Existed account, key:'+str(account[0].key.id()))
+                logging.info('Existed account, key:'+str(account[0].key))
             else:
                 logging.info("New account, google user id:"+str(user.user_id()))
                 new_account = Account(userid=user.user_id(), username=user.nickname(), email=user.email())
                 new_account_key = new_account.put()
-                logging.info('New account, key:'+ str(new_account.key.id()))
+                logging.info('New account, key:' + str(new_account_key))
                 g.user = new_account
         else:
             url = users.create_login_url('/')
-            greeting = '<a href="{}">Sign in</a>'.format(url)
             return redirect(url)
         return f(*args, **kwargs)
     return decorated_function
@@ -34,7 +33,6 @@ def login_required(f):
 def index():
     username = g.user.username
     url = users.create_logout_url('/')
-    greeting = 'Welcome, {}! (<a href="{}">sign out</a>)'.format(username, url)
     return render_template('base.html', username=username, email=g.user.email, userid=g.user.userid, logout_url=url)
 
 
